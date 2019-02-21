@@ -16,7 +16,8 @@ class RabbitConsumer:
     check_connection_period = 10  # seconds
     reconnect_sleep = 10  # seconds
 
-    def __init__(self, pika_params: pika.ConnectionParameters, queue: str, exchange: str = '', exchange_type: str = ''):
+    def __init__(self, pika_params: pika.ConnectionParameters, queue: str, exchange: str = '', exchange_type: str = '',
+                 lazy_connection=True):
         self._pika_params = pika_params
         self._pika_queue = queue
         self.exchange = exchange
@@ -24,7 +25,8 @@ class RabbitConsumer:
 
         self._pika_connection = None
         self._pika_channel = None
-        self._check_connection()
+        if not lazy_connection:
+            self._check_connection()
 
         self._current_task = None
         self._python_q_task = Queue()

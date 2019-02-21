@@ -1,5 +1,6 @@
 import json
 import logging.config
+from typing import Union
 
 import pika
 from pika.exceptions import ConnectionClosed, IncompatibleProtocolError
@@ -20,7 +21,7 @@ class RabbitPublisher:
         if hasattr(self, '_pika_connection') and self._pika_connection and not self._pika_connection.is_closed:
             self._pika_connection.close()
 
-    def publish(self, queue_name: str, data: dict):
+    def publish(self, queue_name: str, data: Union[dict, list, str, int, bool]):
         try:
             if not self._pika_connection or self._pika_connection.is_closed:
                 raise ConnectionClosed
