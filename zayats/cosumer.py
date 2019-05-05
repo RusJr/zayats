@@ -21,15 +21,22 @@ class RabbitConsumer:
 
     acknowledge_period = 10  # seconds
     check_connection_period = 3  # seconds
-    reconnect_sleep = 10  # seconds
+    default_reconnect_sleep = 10  # seconds
 
-    def __init__(self, pika_params: pika.ConnectionParameters, queue: str, exchange: str = '', exchange_type: str = '',
-                 lazy_connection=True, logging_level='INFO'):
+    def __init__(self, pika_params: pika.ConnectionParameters,
+                 queue: str,
+                 exchange='',
+                 exchange_type='',
+                 lazy_connection=True,
+                 reconnect_sleep=default_reconnect_sleep,
+                 logging_level='INFO'):
 
         # logging ------------------------------------
         _logger_name = type(self).__name__
         set_logger(_logger_name, logging_level)
         self._logger = logging.getLogger(_logger_name)
+
+        self.reconnect_sleep = reconnect_sleep
 
         self._pika_params = pika_params
         self._pika_queue = queue
@@ -61,21 +68,6 @@ class RabbitConsumer:
         self._check_connection_and_channel()
         return self._pika_channel
 
-    def send_ack(self) -> None:
-        if self._current_task is not None:
-            self._python_q_acknowledge.put('done')
-            self._current_task = None
-
-    def stop_consuming(self) -> None:
-        self._python_q_acknowledge.put(StopConsuming)
-
-        while not self._python_q_task.empty():
-            self._python_q_task.get()
-
-        self._current_task = None
-
-        self._logger.debug('consuming stopped')
-
     def send_ack_and_get_new_msg(self, timeout=None) -> Any:
         self._check_consuming_thread()
         self.send_ack()
@@ -94,6 +86,24 @@ class RabbitConsumer:
         self._logger.debug('No messages (timeout)')
         return None  # if timeout
 
+    def send_ack(self, stop_consuming=False) -> None:
+        if self._current_task is not None:
+            self._python_q_acknowledge.put('done')
+            self._current_task = None
+
+        if stop_consuming:
+            self.stop_consuming()
+
+    def stop_consuming(self) -> None:
+        self._python_q_acknowledge.put(StopConsuming)
+
+        while not self._python_q_task.empty():
+            self._python_q_task.get()
+
+        self._current_task = None
+
+        self._logger.debug('consuming stopped')
+
     def _check_connection_and_channel(self):
         while not self._pika_connection or self._pika_connection.is_closed:
             try:
@@ -103,7 +113,7 @@ class RabbitConsumer:
                                       type(e).__name__, e, self.reconnect_sleep)
                 sleep(self.reconnect_sleep)
             else:
-                self._logger.info('Connected with RabbitMQ')
+                self._logger.info('Connected with RabbitMQ(%s:%s)', self._pika_params.host, self._pika_params.port)
 
         if not self._pika_channel or self._pika_channel.is_closed:
             self._pika_channel = self._pika_connection.channel()
@@ -120,8 +130,7 @@ class RabbitConsumer:
                 ack = self._python_q_acknowledge.get(timeout=self.acknowledge_period)  # waiting for ack order
                 return ack
             except Empty:
-                self._pika_connection.process_data_events()  # TODO: CHECK!
-                # pass
+                self._pika_connection.process_data_events()
 
     def _consuming_callback(self, ch, method, properties, body):
         try:

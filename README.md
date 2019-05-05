@@ -16,7 +16,7 @@ from zayats import RabbitPublisher, RabbitConsumer
 
 TEST_QUEUE = 'test_queue'
 PIKA_PARAMS = pika.ConnectionParameters(
-    host='0.0.0.0', port=2001, heartbeat_interval=0, credentials=pika.credentials.PlainCredentials('rabbit', '123'),
+    host='0.0.0.0', port=2001, heartbeat=0, credentials=pika.credentials.PlainCredentials('rabbit', '123'),
 )
 
 
