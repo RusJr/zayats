@@ -18,7 +18,7 @@ setup(
     author='Rus Jr',
     author_email='binderrrr@gmail.com',
     keywords='pika rabbit rabbitmq',
-    description='RabbitMQ simple fault-tolerant connector (pika based)',
+    description='RabbitMQ simple fault-tolerant client (pika wrapper)',
 
     python_requires='>=3.5',
     install_requires=['pika==1.0.1']

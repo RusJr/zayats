@@ -97,10 +97,9 @@ class RabbitConsumer:
     def stop_consuming(self) -> None:
         self._python_q_acknowledge.put(StopConsuming)
 
+        self._current_task = None
         while not self._python_q_task.empty():
             self._python_q_task.get()
-
-        self._current_task = None
 
         self._logger.debug('consuming stopped')
 
@@ -152,6 +151,13 @@ class RabbitConsumer:
     def _check_consuming_thread(self):
         self._check_connection_and_channel()
         if not self._consuming_thread or not self._consuming_thread.is_alive():
+
+            # clean
+            self._current_task = None
+            while not self._python_q_task.empty():
+                self._python_q_task.get()
+
+            # new thread
             self._pika_channel.basic_consume(self._pika_queue, self._consuming_callback, auto_ack=False)
             self._consuming_thread = Thread(target=self._pika_channel.start_consuming)
             self._consuming_thread.daemon = True
