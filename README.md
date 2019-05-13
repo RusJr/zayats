@@ -1,7 +1,7 @@
 # Zayats
 
 ## Description
-RabbitMQ simple fault-tolerant connector (pika based). 
+RabbitMQ simple fault-tolerant client (pika wrapper). 
 Supports JSON message format only.
 
 ## Installition
