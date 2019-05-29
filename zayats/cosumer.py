@@ -6,7 +6,7 @@ from typing import Any
 
 import pika
 from pika.adapters.blocking_connection import BlockingChannel
-from pika.exceptions import AMQPConnectionError
+from pika.exceptions import AMQPConnectionError, ConnectionClosedByBroker
 from queue import Queue, Empty
 from threading import Thread, Event
 
@@ -48,8 +48,8 @@ class RabbitConsumer:
         self.exchange = exchange
         self.exchange_type = exchange_type
 
-        self.__pika_connection: pika.BlockingConnection = None
-        self.__pika_channel: BlockingChannel = None
+        self.__pika_connection = None  # pika.BlockingConnection
+        self.__pika_channel = None  # BlockingChannel
         if not lazy_connection:
             self._check_connection_and_channel()
 
@@ -57,7 +57,7 @@ class RabbitConsumer:
         self._thread_input = Queue()
         self._thread_output = Queue()
 
-        self._consuming_thread: Thread = None
+        self._consuming_thread = None  # Thread
         self._stop_event = Event()
 
     def __del__(self):
@@ -111,6 +111,8 @@ class RabbitConsumer:
             try:
                 self.__pika_connection = pika.BlockingConnection(parameters=self._pika_params)
             except (AMQPConnectionError, gaierror) as e:
+                if isinstance(e, ConnectionClosedByBroker) and hasattr(e, 'reply_code') and e.reply_code == 403:
+                    raise e
                 self._logger.error('Connection problem: %s(%s). Retry after %d seconds',
                                    type(e).__name__, e, self.reconnect_sleep)
                 sleep(self.reconnect_sleep)

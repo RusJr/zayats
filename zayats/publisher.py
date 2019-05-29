@@ -30,9 +30,9 @@ class RabbitPublisher:
         if not lazy_connection:
             self._open_connection()
 
-    def __del__(self):
-        if hasattr(self, '_pika_connection') and self._pika_connection and not self._pika_connection.is_closed:
-            self._pika_connection.close()
+    # def __del__(self):
+    #     if hasattr(self, '_pika_connection') and self._pika_connection and not self._pika_connection.is_closed:
+    #         self._pika_connection.close()
 
     @property
     def pika_connection(self) -> pika.BlockingConnection:
