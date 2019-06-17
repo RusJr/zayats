@@ -25,7 +25,7 @@ if __name__ == '__main__':
     # publishing example --------------------------------------------
     publisher = RabbitPublisher(PIKA_PARAMS)
     publisher.pika_channel.queue_declare(queue=TEST_QUEUE, durable=True)
-    publisher.publish(queue_name=TEST_QUEUE, data={'Hello': 'world'})
+    publisher.publish(queue_name=TEST_QUEUE, data={'Hello': 'world'}, declare_queue=False)
 
     # consuming loop ---------------------------------------
     consumer = RabbitConsumer(PIKA_PARAMS, queue=TEST_QUEUE)
