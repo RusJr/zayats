@@ -30,6 +30,7 @@ class RabbitConsumer:
 
     def __init__(self, pika_params: pika.ConnectionParameters,
                  queue: str,
+                 queue_arguments: dict=None,
                  exchange='',
                  exchange_type='',
                  lazy_connection=True,
@@ -42,8 +43,9 @@ class RabbitConsumer:
         self._logger = logging.getLogger(_logger_name)
 
         self.reconnect_sleep = reconnect_sleep
+        self.pika_params = pika_params
+        self.queue_arguments = queue_arguments
 
-        self._pika_params = pika_params
         self._pika_queue = queue
         self.exchange = exchange
         self.exchange_type = exchange_type
@@ -109,7 +111,7 @@ class RabbitConsumer:
     def _check_connection_and_channel(self):
         while not self.__pika_connection or self.__pika_connection.is_closed:
             try:
-                self.__pika_connection = pika.BlockingConnection(parameters=self._pika_params)
+                self.__pika_connection = pika.BlockingConnection(parameters=self.pika_params)
             except (AMQPConnectionError, gaierror) as e:
                 if isinstance(e, ConnectionClosedByBroker) and hasattr(e, 'reply_code') and e.reply_code == 403:
                     raise e
@@ -117,12 +119,13 @@ class RabbitConsumer:
                                    type(e).__name__, e, self.reconnect_sleep)
                 sleep(self.reconnect_sleep)
             else:
-                self._logger.info('Connected with RabbitMQ(%s:%s)', self._pika_params.host, self._pika_params.port)
+                self._logger.info('Connected with RabbitMQ(%s:%s)', self.pika_params.host, self.pika_params.port)
 
         if not self.__pika_channel or self.__pika_channel.is_closed:
             self.__pika_channel = self.__pika_connection.channel()
             self.__pika_channel.basic_qos(prefetch_count=1)
-            self.__pika_channel.queue_declare(queue=self._pika_queue, durable=True)
+            queue_arguments = self.queue_arguments or {}
+            self.__pika_channel.queue_declare(queue=self._pika_queue, durable=True, arguments=queue_arguments)
             if self.exchange:
                 self.__pika_channel.exchange_declare(exchange=self.exchange, exchange_type=self.exchange_type)
                 self.__pika_channel.queue_bind(exchange=self.exchange, queue=self._pika_queue)
