@@ -34,13 +34,10 @@ class RabbitConsumer:
                  exchange='',
                  exchange_type='',
                  lazy_connection=True,
-                 reconnect_sleep=default_reconnect_sleep,
-                 logging_level='INFO'):
+                 reconnect_sleep=default_reconnect_sleep):
 
         # logging ------------------------------------
-        _logger_name = type(self).__name__
-        set_logger(_logger_name, logging_level)
-        self._logger = logging.getLogger(_logger_name)
+        self._logger = logging.getLogger(type(self).__name__)
 
         self.reconnect_sleep = reconnect_sleep
         self.pika_params = pika_params

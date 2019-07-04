@@ -15,13 +15,10 @@ class RabbitPublisher:
     Jsonable = Union[dict, list, str, int, bool]
     reconnect_sleep = 10  # seconds
 
-    def __init__(self, pika_params: pika.ConnectionParameters, lazy_connection=True, reconnect_sleep=reconnect_sleep,
-                 logging_level='INFO'):
+    def __init__(self, pika_params: pika.ConnectionParameters, lazy_connection=True, reconnect_sleep=reconnect_sleep):
 
-        # logging ------------------------------------
-        _logger_name = type(self).__name__
-        set_logger(_logger_name, logging_level)
-        self._logger = logging.getLogger(_logger_name)
+        # logging -------------------------------------------
+        self._logger = logging.getLogger(type(self).__name__)
 
         self.pika_params = pika_params
         self.reconnect_sleep = reconnect_sleep
